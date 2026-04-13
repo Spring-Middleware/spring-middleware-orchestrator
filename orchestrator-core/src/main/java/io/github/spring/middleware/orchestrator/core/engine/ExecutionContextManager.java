@@ -55,10 +55,15 @@ public class ExecutionContextManager {
 
     public ExecutionContext loadExecutionContext(FlowExecution flowExecution, boolean remove) {
         ExecutionContext executionContext = executionContextStore.loadContext(flowExecution);
-        if (executionContext != null && remove) {
+        if (executionContext == null) {
+            return null;
+        }
+
+        if (remove) {
             executionContextStore.removeContext(flowExecution.getId());
             timeoutScheduler.removeTimeout(flowExecution.getId());
         }
+
         addExecutionContext(executionContext);
         return executionContext;
     }

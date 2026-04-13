@@ -1,14 +1,13 @@
 package io.github.spring.middleware.orchestrator.infra.engine.scheduler;
 
 import io.github.spring.middleware.orchestrator.core.domain.TimeoutDefinition;
-import io.github.spring.middleware.orchestrator.core.runtime.FlowExecutionTimeout;
 import io.github.spring.middleware.orchestrator.core.port.TimeoutScheduler;
+import io.github.spring.middleware.orchestrator.core.runtime.FlowExecutionTimeout;
 import io.github.spring.middleware.orchestrator.infra.engine.registry.PersistedContextDateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -45,28 +44,29 @@ public class InMemoryTimeoutScheduler implements TimeoutScheduler {
         if (timeout == null) {
             return TimeoutDefinition.builder()
                     .timeoutSeconds(defaultMaxSecondsContextPersisted)
-                    .onTimeoutAction(ERROR_TIMEOUT_RESOLVER) // o lo que uses ahora
+                    .onTimeoutResolver(ERROR_TIMEOUT_RESOLVER) // o lo que uses ahora
                     .build();
         }
 
         Long timeoutSeconds = Optional.ofNullable(timeout.getTimeoutSeconds())
                 .orElse(defaultMaxSecondsContextPersisted);
 
-        String onTimeoutAction = Optional.ofNullable(timeout.getOnTimeoutAction())
+        String onTimeoutResolver = Optional.ofNullable(timeout.getOnTimeoutResolver())
                 .orElse(ERROR_TIMEOUT_RESOLVER);
 
         return TimeoutDefinition.builder()
                 .timeoutSeconds(timeoutSeconds)
-                .onTimeoutAction(onTimeoutAction)
+                .onTimeoutResolver(onTimeoutResolver)
                 .build();
     }
 
     @Override
     public Collection<FlowExecutionTimeout> getFlowExecutionTimeoutByDateTime(LocalDateTime dateTime) {
         return persistedContextMap.entrySet().stream()
-                .filter(entry ->
-                        ChronoUnit.SECONDS.between(entry.getValue().getDateTime(), dateTime)
-                                > entry.getValue().getTimeoutDefinition().getTimeoutSeconds())
+                .filter(entry -> entry.getValue()
+                        .getDateTime()
+                        .plusSeconds(entry.getValue().getTimeoutDefinition().getTimeoutSeconds())
+                        .isBefore(dateTime))
                 .map(Map.Entry::getKey)
                 .map(this::removeAndBuildTimeout)
                 .filter(Objects::nonNull)

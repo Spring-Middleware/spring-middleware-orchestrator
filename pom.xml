@@ -63,10 +63,12 @@
 
         <orchestrator.core.version>1.0.0</orchestrator.core.version>
         <orchestrator.infra.version>1.0.0</orchestrator.infra.version>
+        <orchestrator.demo.version>1.0.0</orchestrator.demo.version>
 
     </properties>
 
     <modules>
+        <module>orchestrator-demo</module>
         <module>orchestrator-core</module>
         <module>orchestrator-infra</module>
     </modules>
@@ -308,7 +310,9 @@
                                 </goals>
                                 <configuration>
                                     <failOnError>false</failOnError>
-                                    <sourcepath>${project.basedir}/src/main/java;${project.build.directory}/generated-sources/openapi/src/main/java</sourcepath>
+                                    <sourcepath>
+                                        ${project.basedir}/src/main/java;${project.build.directory}/generated-sources/openapi/src/main/java
+                                    </sourcepath>
                                 </configuration>
                             </execution>
                         </executions>

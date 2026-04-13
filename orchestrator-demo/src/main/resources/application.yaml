@@ -1,0 +1,43 @@
+server:
+  port: ${SERVER_PORT:8082}
+  servlet:
+    context-path: ${SERVER_CONTEXT_PATH:/demo}
+
+spring:
+  data:
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/orchestrator}
+      uuid-representation: standard
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    io.github.spring.middleware: ${LOG_LEVEL_PACKAGE:INFO}
+    io.github.spring.middleware.scheduler: ERROR
+    io.github.spring:.middleware.jms: ERROR
+    org.springframework.security: ERROR
+    org.springframework.security.web: ERROR
+    root: ${LOG_LEVEL_ROOT:ERROR}
+
+middleware:
+  security:
+    type: ${SECURITY_TYPE:BASIC_AUTH} # Options: NONE, BASIC_AUTH, JWT, OUAHT2, API_KEY
+    public-paths:
+      - /graphql
+      - /resources/register
+      - /api-docs/**
+      - /swagger-ui.html
+      - /swagger-ui/**
+      - /flows/**
+
+    basic-auth:
+      credentials:
+        - username: ${BASIC_AUTH_ADMIN:admin}
+          password: ${BASIC_AUTH_ADMIN_PASSWORD:admin}
+          roles: [ ADMIN ]
+

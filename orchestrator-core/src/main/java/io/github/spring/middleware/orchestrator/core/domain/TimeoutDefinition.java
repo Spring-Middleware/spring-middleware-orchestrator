@@ -8,6 +8,6 @@ import lombok.Data;
 public class TimeoutDefinition {
 
     private Long timeoutSeconds;
-    private String onTimeoutAction;
+    private String onTimeoutResolver;
 
 }

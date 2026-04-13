@@ -1,0 +1,31 @@
+{
+  "flowId": {
+    "value": "SIMPLE_FLOW"
+  },
+  "actions": [
+    {
+      "actionName": "FIRST_ACTION",
+      "actionType": "FUNCTION",
+      "configuration": {
+        "name": "FirstActionConfig",
+        "number": 3,
+        "array": [
+          1,
+          2,
+          3
+        ]
+      },
+      "nextActionDefinition": {
+        "resolver": "FIXED_NEXT_ACTION",
+        "parameters": {
+          "nextAction": "SECOND_ACTION"
+        }
+      }
+    },
+    {
+      "actionName": "SECOND_ACTION",
+      "actionType": "CONSUMER",
+      "finalAction": "true"
+    }
+  ]
+}

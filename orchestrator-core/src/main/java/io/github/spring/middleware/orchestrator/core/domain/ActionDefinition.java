@@ -1,19 +1,20 @@
 package io.github.spring.middleware.orchestrator.core.domain;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
 @Builder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ActionDefinition {
 
     private String actionName;
     private ActionType actionType;
-
-    // Instead of actionClazz, refer to the Spring Bean name (or keep actionClass if you look up bean by type)
-    private String actionBeanName;
 
     private NextActionDefinition nextAction;
     private Map<String, Object> configuration;

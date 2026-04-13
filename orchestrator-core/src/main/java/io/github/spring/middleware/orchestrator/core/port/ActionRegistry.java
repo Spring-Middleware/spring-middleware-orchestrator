@@ -1,6 +1,6 @@
 package io.github.spring.middleware.orchestrator.core.port;
 
-import io.github.spring.middleware.orchestrator.core.engine.Action;
+import io.github.spring.middleware.orchestrator.core.engine.action.Action;
 
 public interface ActionRegistry {
 

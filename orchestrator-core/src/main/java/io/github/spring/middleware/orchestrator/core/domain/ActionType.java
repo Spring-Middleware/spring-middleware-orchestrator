@@ -4,7 +4,7 @@ public enum ActionType {
 
     FUNCTION,
     CONSUMER,
-    SUPPLIER;
+    RESUME;
 }
 
 

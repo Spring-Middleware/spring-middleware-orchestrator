@@ -2,16 +2,16 @@ package io.github.spring.middleware.orchestrator.infra.engine.registry;
 
 import io.github.spring.middleware.config.PropertyNames;
 import io.github.spring.middleware.orchestrator.core.domain.FlowId;
-import io.github.spring.middleware.orchestrator.core.runtime.FlowExecution;
 import io.github.spring.middleware.orchestrator.core.engine.FlowExecutionFactory;
 import io.github.spring.middleware.orchestrator.core.port.FlowExecutionRegistry;
+import io.github.spring.middleware.orchestrator.core.runtime.ActionExecution;
+import io.github.spring.middleware.orchestrator.core.runtime.FlowExecution;
 import io.github.spring.middleware.orchestrator.infra.engine.repository.FlowExecutionDocument;
 import io.github.spring.middleware.orchestrator.infra.engine.repository.MongoFlowExecutionRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,11 +29,23 @@ public class MongoFlowExecutionRegistry implements FlowExecutionRegistry {
     }
 
     @Override
-    public FlowExecution createFlowExecution(String flowId, Map<String, Object> context) {
+    public <T> FlowExecution createFlowExecution(String flowId, T context) {
         String requestId = MDC.get(PropertyNames.REQUEST_ID);
         FlowExecution flowExecution = flowExecutionFactory.createFlowExecution(new FlowId(flowId), context, requestId);
         FlowExecutionDocument flowExecutionDocument = toFlowExecutionDocument(flowExecution);
         mongoFlowExecutionRepository.save(flowExecutionDocument);
+        return flowExecution;
+    }
+
+    @Override
+    public FlowExecution addActionExecutionToFlowExecution(UUID flowExecutionId, ActionExecution actionExecution) {
+        FlowExecutionDocument document = mongoFlowExecutionRepository.findById(flowExecutionId)
+                .orElseThrow(() -> new IllegalStateException(
+                        STR."FlowExecution not found with id: \{flowExecutionId}"));
+        FlowExecution flowExecution = toFlowExecution(document);
+        flowExecution.addActionExecution(actionExecution);
+        FlowExecutionDocument updatedDocument = toFlowExecutionDocument(flowExecution);
+        mongoFlowExecutionRepository.save(updatedDocument);
         return flowExecution;
     }
 

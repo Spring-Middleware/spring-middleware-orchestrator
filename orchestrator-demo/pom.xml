@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <packaging>jar</packaging>
+
+    <parent>
+        <groupId>io.github.spring-middleware</groupId>
+        <artifactId>spring-middleware-orchestrator</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <groupId>io.github.spring-middleware</groupId>
+    <artifactId>ochestrator-demo</artifactId>
+    <version>${orchestrator.demo.version}</version>
+
+    <name>orchestrator-demo</name>
+    <description>Orchestrator Demo</description>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.spring-middleware</groupId>
+            <artifactId>ochestrator-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.spring-middleware</groupId>
+            <artifactId>ochestrator-infra</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+    </dependencies>
+
+
+</project>

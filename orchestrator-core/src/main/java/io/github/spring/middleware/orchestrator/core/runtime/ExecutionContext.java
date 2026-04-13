@@ -28,6 +28,12 @@ public class ExecutionContext {
         return (T) runtimeContext.get(propertyName);
     }
 
+    public void addActionExecution(ActionExecution actionExecution) {
+
+        flowExecution.addActionExecution(actionExecution);
+    }
+
+
     public FlowExecution getFlowExecution() {
 
         return flowExecution;

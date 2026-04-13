@@ -1,10 +1,13 @@
 package io.github.spring.middleware.orchestrator.core.domain;
 
-import io.github.spring.middleware.orchestrator.core.domain.params.NextActionResolverParams;
+import lombok.Data;
 
-public class NextActionDefinition<P extends NextActionResolverParams> {
+import java.util.Map;
+
+@Data
+public class NextActionDefinition {
 
     private String resolver; // antes clazz
-    private P params;
+    private Map<String, Object> parameters;
 
 }

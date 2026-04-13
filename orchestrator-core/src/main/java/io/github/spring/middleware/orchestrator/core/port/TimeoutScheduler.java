@@ -13,5 +13,5 @@ public interface TimeoutScheduler {
 
     void scheduleTimeout(UUID flowExecutionId, TimeoutDefinition timeoutRedirection);
 
-    public void removeTimeout(UUID flowExecutionId);
+    void removeTimeout(UUID flowExecutionId);
 }

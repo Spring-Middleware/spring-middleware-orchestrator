@@ -6,6 +6,10 @@ import io.github.spring.middleware.orchestrator.core.port.ExecutionContextStore;
 import io.github.spring.middleware.orchestrator.core.port.TimeoutScheduler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+import java.util.concurrent.Executor;
 
 @Configuration
 public class ExecutionContextConfiguration {
@@ -22,4 +26,17 @@ public class ExecutionContextConfiguration {
                 timeoutScheduler
         );
     }
+
+    @Bean
+    @Primary
+    public Executor flowExecutorTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(20);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("flow-exec-");
+        executor.initialize();
+        return executor;
+    }
+
 }

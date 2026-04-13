@@ -34,7 +34,9 @@ public class JsonFlowDefinitionsLoader implements FlowDefinitionsLoader {
 
             List<FlowDefinition> flowDefinitions = new ArrayList<>();
             for (Resource resource : resources) {
-                flowDefinitions.add(loadFlowDefinition(resource));
+                FlowDefinition flowDefinition = loadFlowDefinition(resource);
+                flowDefinition.buildActionDefinitionMap();
+                flowDefinitions.add(flowDefinition);
             }
 
             return flowDefinitions;

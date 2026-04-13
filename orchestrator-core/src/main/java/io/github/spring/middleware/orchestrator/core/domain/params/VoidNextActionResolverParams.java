@@ -1,11 +1,5 @@
 package io.github.spring.middleware.orchestrator.core.domain.params;
 
-public class VoidNextActionResolverParams extends NextActionResolverParams {
+public class VoidNextActionResolverParams implements NextActionResolverParams {
 
-
-    @Override
-    public NextActionResolverParamsType getNextActionSupplierParamsType() {
-
-        return NextActionResolverParamsType.VOID;
-    }
 }

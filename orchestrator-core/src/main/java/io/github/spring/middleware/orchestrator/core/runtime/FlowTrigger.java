@@ -4,14 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class FlowTrigger {
+public class FlowTrigger<T> {
 
     private String flowId;
-    private Map<String, Object> payload;
+    private T payload;
 
 }

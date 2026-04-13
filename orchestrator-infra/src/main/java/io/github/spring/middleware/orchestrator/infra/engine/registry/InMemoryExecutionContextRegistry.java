@@ -1,9 +1,8 @@
 package io.github.spring.middleware.orchestrator.infra.engine.registry;
 
-import io.github.spring.middleware.orchestrator.core.runtime.ExecutionContext;
 import io.github.spring.middleware.orchestrator.core.port.ExecutionContextRegistry;
+import io.github.spring.middleware.orchestrator.core.runtime.ExecutionContext;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -14,9 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class InMemoryExecutionContextRegistry implements ExecutionContextRegistry {
 
     private ConcurrentHashMap<UUID, ExecutionContext> contextMap = new ConcurrentHashMap<>();
-
-    @Value("${orchestrator.execution-context.default-max-seconds-context-persisted:3600}")
-    private Long defaultMaxSecondsContextPersisted;
 
     @Override
     public void addExecutionContext(ExecutionContext executionContext) {

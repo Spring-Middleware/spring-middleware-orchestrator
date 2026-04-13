@@ -1,12 +1,13 @@
 package io.github.spring.middleware.orchestrator.infra.engine.registry;
 
-import io.github.spring.middleware.orchestrator.core.engine.ResolverName;
 import io.github.spring.middleware.orchestrator.core.engine.TimeoutRedirectResolver;
 import io.github.spring.middleware.orchestrator.core.engine.TimeoutRedirectResolverRegistry;
+import io.github.spring.middleware.orchestrator.core.engine.TimeoutResolverName;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -14,6 +15,8 @@ import java.util.stream.Collectors;
 public class DefaultTimeoutRedirectResolverRegistry implements TimeoutRedirectResolverRegistry {
 
     private final Map<String, TimeoutRedirectResolver> resolvers;
+
+    private static final String DEFAULT_TIMEOUT_REDIRECT_RESOLVER = "errorTimeout";
 
     public DefaultTimeoutRedirectResolverRegistry(List<TimeoutRedirectResolver> resolverList) {
         this.resolvers = resolverList.stream()
@@ -24,13 +27,13 @@ public class DefaultTimeoutRedirectResolverRegistry implements TimeoutRedirectRe
     }
 
     private String resolveName(TimeoutRedirectResolver resolver) {
-        ResolverName annotation = resolver.getClass().getAnnotation(ResolverName.class);
+        TimeoutResolverName annotation = resolver.getClass().getAnnotation(TimeoutResolverName.class);
         return annotation.value();
     }
 
     @Override
     public TimeoutRedirectResolver get(String name) {
-        return resolvers.get(name);
+        return Optional.ofNullable(resolvers.get(name)).orElse(resolvers.get(DEFAULT_TIMEOUT_REDIRECT_RESOLVER));
     }
 
 }
