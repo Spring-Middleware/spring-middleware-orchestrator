@@ -6,8 +6,11 @@ import io.github.spring.middleware.orchestrator.core.runtime.ExecutionContext;
 
 import java.util.Map;
 
-@FunctionalInterface
 public interface FunctionAction<T, R> extends Action {
 
-    R apply(ExecutionContext executionContext, ActionExecutionContext actionExecutionContext, T payload) throws ActionException;
+    default T parsePayload(Object payload) throws ActionException {
+        return PayloadParserUtils.parse(payload,this, FunctionAction.class, 0);
+    }
+
+    R apply(ExecutionContext<?> executionContext, ActionExecutionContext actionExecutionContext, T payload) throws ActionException;
 }

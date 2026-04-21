@@ -1,0 +1,9 @@
+{
+  "flowId": "RESOLVER_FLOW",
+  "payload": {
+    "valuesByAction": {
+      "FIRST_PROB_ACTION": "Value for first prob action",
+      "SECOND_PROB_ACTION": "Value for second prob action"
+    }
+  }
+}

@@ -2,6 +2,7 @@
   "flowId": {
     "value": "SIMPLE_FLOW"
   },
+  "firstAction": "FIRST_ACTION",
   "actions": [
     {
       "actionName": "FIRST_ACTION",
@@ -15,7 +16,7 @@
           3
         ]
       },
-      "nextActionDefinition": {
+      "nextAction": {
         "resolver": "FIXED_NEXT_ACTION",
         "parameters": {
           "nextAction": "SECOND_ACTION"
@@ -25,7 +26,7 @@
     {
       "actionName": "SECOND_ACTION",
       "actionType": "CONSUMER",
-      "finalAction": "true"
+      "finalAction": true
     }
   ]
 }

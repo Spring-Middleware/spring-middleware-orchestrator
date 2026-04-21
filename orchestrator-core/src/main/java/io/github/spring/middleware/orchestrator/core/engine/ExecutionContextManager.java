@@ -1,12 +1,12 @@
 package io.github.spring.middleware.orchestrator.core.engine;
 
 import io.github.spring.middleware.orchestrator.core.domain.TimeoutDefinition;
-import io.github.spring.middleware.orchestrator.core.runtime.ExecutionContext;
-import io.github.spring.middleware.orchestrator.core.runtime.FlowExecution;
-import io.github.spring.middleware.orchestrator.core.runtime.FlowExecutionTimeout;
 import io.github.spring.middleware.orchestrator.core.port.ExecutionContextRegistry;
 import io.github.spring.middleware.orchestrator.core.port.ExecutionContextStore;
 import io.github.spring.middleware.orchestrator.core.port.TimeoutScheduler;
+import io.github.spring.middleware.orchestrator.core.runtime.ExecutionContext;
+import io.github.spring.middleware.orchestrator.core.runtime.FlowExecution;
+import io.github.spring.middleware.orchestrator.core.runtime.FlowExecutionTimeout;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -32,8 +32,6 @@ public class ExecutionContextManager {
 
     public void removeExecutionContext(UUID flowExecutionId) {
         executionContextRegistry.remove(flowExecutionId);
-        executionContextStore.removeContext(flowExecutionId);
-        timeoutScheduler.removeTimeout(flowExecutionId);
     }
 
     public ExecutionContext getExecutionContext(UUID flowExecutionId) {
@@ -44,13 +42,15 @@ public class ExecutionContextManager {
         return timeoutScheduler.getFlowExecutionTimeoutByDateTime(dateTime);
     }
 
-    public void persistExecutionContext(UUID flowExecutionId, TimeoutDefinition timeoutDefinition) {
+    public <T> void persistExecutionContext(UUID flowExecutionId, TimeoutDefinition timeoutDefinition, String actionName, T payload) {
         ExecutionContext executionContext = executionContextRegistry.remove(flowExecutionId);
         if (executionContext == null) {
             return;
         }
-        executionContextStore.persistExecutionContext(executionContext);
-        timeoutScheduler.scheduleTimeout(flowExecutionId, timeoutDefinition);
+        executionContextStore.persistExecutionContext(executionContext, actionName, payload);
+        if (timeoutDefinition != null) {
+            timeoutScheduler.scheduleTimeout(flowExecutionId, timeoutDefinition);
+        }
     }
 
     public ExecutionContext loadExecutionContext(FlowExecution flowExecution, boolean remove) {

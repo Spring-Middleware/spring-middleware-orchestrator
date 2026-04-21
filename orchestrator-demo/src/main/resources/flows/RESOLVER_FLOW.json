@@ -1,0 +1,37 @@
+{
+  "flowId": {
+    "value": "RESOLVER_FLOW"
+  },
+  "firstAction": "FIRST_RESOLVER_ACTION",
+  "actions": [
+    {
+      "actionName": "FIRST_RESOLVER_ACTION",
+      "actionType": "FUNCTION",
+      "nextAction": {
+        "resolver": "PROB_RESOLVER",
+        "parameters": {
+          "probabilitiesActions": [
+            {
+              "actionName": "FIRST_PROB_ACTION",
+              "probability": 0.7
+            },
+            {
+              "actionName": "SECOND_PROB_ACTION",
+              "probability": 0.3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "actionName": "FIRST_PROB_ACTION",
+      "actionType": "CONSUMER",
+      "finalAction": true
+    },
+    {
+      "actionName": "SECOND_PROB_ACTION",
+      "actionType": "CONSUMER",
+      "finalAction": true
+    }
+  ]
+}

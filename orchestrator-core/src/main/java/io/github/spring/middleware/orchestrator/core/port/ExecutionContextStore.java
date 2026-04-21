@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public interface ExecutionContextStore {
 
-    void persistExecutionContext(ExecutionContext executionContext);
+    <T> void persistExecutionContext(ExecutionContext executionContext, String actionName, T payload);
 
     ExecutionContext loadContext(FlowExecution flowExecution);
 

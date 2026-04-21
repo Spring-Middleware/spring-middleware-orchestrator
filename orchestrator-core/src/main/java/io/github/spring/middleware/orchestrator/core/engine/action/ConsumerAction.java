@@ -6,6 +6,10 @@ import io.github.spring.middleware.orchestrator.core.runtime.ExecutionContext;
 
 public interface ConsumerAction<C> extends Action {
 
-    void consume(ExecutionContext executionContext, ActionExecutionContext actionContext, C c) throws ActionException;
+    default C parsePayload(Object payload) throws ActionException {
+        return PayloadParserUtils.parse(payload, this, ConsumerAction.class, 0);
+    }
+
+    void consume(ExecutionContext<?> executionContext, ActionExecutionContext actionContext, C c) throws ActionException;
 
 }

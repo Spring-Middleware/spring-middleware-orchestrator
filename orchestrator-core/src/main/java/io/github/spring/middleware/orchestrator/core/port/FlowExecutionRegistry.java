@@ -1,6 +1,5 @@
 package io.github.spring.middleware.orchestrator.core.port;
 
-import io.github.spring.middleware.orchestrator.core.runtime.ActionExecution;
 import io.github.spring.middleware.orchestrator.core.runtime.FlowExecution;
 
 import java.util.Optional;
@@ -12,6 +11,6 @@ public interface FlowExecutionRegistry {
 
     <T> FlowExecution createFlowExecution(String flowId, T initialContext);
 
-    FlowExecution addActionExecutionToFlowExecution(UUID flowExecutionId, ActionExecution actionExecution);
+    FlowExecution updateFlowExecution(FlowExecution flowExecution);
 
 }

@@ -7,7 +7,7 @@ import java.util.Map;
 @Data
 public class NextActionDefinition {
 
-    private String resolver; // antes clazz
+    private String resolver;
     private Map<String, Object> parameters;
 
 }

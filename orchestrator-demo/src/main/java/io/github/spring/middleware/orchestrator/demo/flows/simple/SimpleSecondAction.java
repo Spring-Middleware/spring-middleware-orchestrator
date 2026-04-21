@@ -9,9 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
 @ActionName("SECOND_ACTION")
 public class SimpleSecondAction implements ConsumerAction<SimplePayload> {
+
     @Override
     public void consume(ExecutionContext executionContext, ActionExecutionContext actionContext, SimplePayload simplePayload) throws ActionException {
        log.info("Executing second action with payload: {}", simplePayload);

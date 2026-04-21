@@ -5,11 +5,9 @@ import io.github.spring.middleware.orchestrator.core.engine.NextActionResolver;
 import io.github.spring.middleware.orchestrator.core.engine.NextActionResolverName;
 import io.github.spring.middleware.orchestrator.core.runtime.ExecutionContext;
 import io.github.spring.middleware.orchestrator.core.runtime.NextActionResolverResult;
-import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-@Component
 @NextActionResolverName("FIXED_NEXT_ACTION")
 public class FixedNextActionResolver<T> implements NextActionResolver<T, FixedNextActionResolverParams> {
 

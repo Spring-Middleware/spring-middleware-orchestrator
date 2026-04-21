@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class InMemoryTimeoutScheduler implements TimeoutScheduler {
 
-    public static final String ERROR_TIMEOUT_RESOLVER = "errorTimeout";
+    public static final String DEFAULT_ACTION_TIMEOUT_RESOLVER = "FIXED_NEXT_ACTION";
 
     @Value("${orchestrator.timeout.default-max-seconds-context-persisted:3600}")
     private Long defaultMaxSecondsContextPersisted;
@@ -42,21 +42,20 @@ public class InMemoryTimeoutScheduler implements TimeoutScheduler {
     private TimeoutDefinition resolveTimeoutDefinition(TimeoutDefinition timeout) {
 
         if (timeout == null) {
-            return TimeoutDefinition.builder()
-                    .timeoutSeconds(defaultMaxSecondsContextPersisted)
-                    .onTimeoutResolver(ERROR_TIMEOUT_RESOLVER) // o lo que uses ahora
-                    .build();
+            throw new IllegalArgumentException("TimeoutDefinition cannot be null");
         }
 
-        Long timeoutSeconds = Optional.ofNullable(timeout.getTimeoutSeconds())
+        Long timeoutSeconds = Optional.ofNullable(timeout.getSeconds())
                 .orElse(defaultMaxSecondsContextPersisted);
 
-        String onTimeoutResolver = Optional.ofNullable(timeout.getOnTimeoutResolver())
-                .orElse(ERROR_TIMEOUT_RESOLVER);
+        String onTimeoutResolver = Optional.ofNullable(timeout.getResolver())
+                .orElse(DEFAULT_ACTION_TIMEOUT_RESOLVER);
 
         return TimeoutDefinition.builder()
-                .timeoutSeconds(timeoutSeconds)
-                .onTimeoutResolver(onTimeoutResolver)
+                .seconds(timeoutSeconds)
+                .resolver(onTimeoutResolver)
+                .removeContextOnLoad(timeout.isRemoveContextOnLoad())
+                .parameters(timeout.getParameters())
                 .build();
     }
 
@@ -65,7 +64,7 @@ public class InMemoryTimeoutScheduler implements TimeoutScheduler {
         return persistedContextMap.entrySet().stream()
                 .filter(entry -> entry.getValue()
                         .getDateTime()
-                        .plusSeconds(entry.getValue().getTimeoutDefinition().getTimeoutSeconds())
+                        .plusSeconds(entry.getValue().getTimeoutDefinition().getSeconds())
                         .isBefore(dateTime))
                 .map(Map.Entry::getKey)
                 .map(this::removeAndBuildTimeout)

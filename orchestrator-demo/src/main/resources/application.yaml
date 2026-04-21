@@ -1,12 +1,12 @@
 server:
-  port: ${SERVER_PORT:8082}
+  port: ${SERVER_PORT:8080}
   servlet:
     context-path: ${SERVER_CONTEXT_PATH:/demo}
 
 spring:
   data:
     mongodb:
-      uri: ${MONGO_URI:mongodb://localhost:27017/orchestrator}
+      uri: ${MONGO_URI:mongodb://localhost:27018/orchestrator}
       uuid-representation: standard
 
 springdoc:
@@ -25,6 +25,8 @@ logging:
     root: ${LOG_LEVEL_ROOT:ERROR}
 
 middleware:
+  clients:
+    enabled: false
   security:
     type: ${SECURITY_TYPE:BASIC_AUTH} # Options: NONE, BASIC_AUTH, JWT, OUAHT2, API_KEY
     public-paths:
@@ -40,4 +42,31 @@ middleware:
         - username: ${BASIC_AUTH_ADMIN:admin}
           password: ${BASIC_AUTH_ADMIN_PASSWORD:admin}
           roles: [ ADMIN ]
+
+  kafka:
+    enabled: ${KAFKA_ENABLED:false}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    create-missing-topics: true
+    topics:
+      - name: flow-execution-events
+        partitions: 3
+        replication-factor: 2
+
+    error-handling:
+      enabled: ${KAFKA_ERROR_HANDLING_ENABLED:true}
+      max-retries: ${KAFKA_ERROR_HANDLING_MAX_RETRIES:3}
+      retry-backoff-ms: ${KAFKA_ERROR_HANDLING_RETRY_BACKOFF_MS:1000}
+      dead-letter:
+        enabled: ${KAFKA_ERROR_HANDLING_DEAD_LETTER_ENABLED:true}
+        suffix: .DLT
+
+    publishers:
+      orchestrator-publisher:
+        topic: flow-execution-events
+
+    subscribers:
+      orchestrator-subscriber:
+        group-id: orchestrator-group
+        topic: flow-execution-events
+        concurrency: 1
 

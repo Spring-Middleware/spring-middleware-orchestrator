@@ -1,17 +1,21 @@
 package io.github.spring.middleware.orchestrator.core.runtime;
 
 import io.github.spring.middleware.orchestrator.core.domain.FlowId;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
 @Builder
-public class FlowExecution<T> {
+@AllArgsConstructor
+@NoArgsConstructor
+public class FlowExecution<T,C> {
 
     private UUID id;
     private String requestId;
@@ -19,15 +23,20 @@ public class FlowExecution<T> {
     private LocalDateTime endDateTime;
     private FlowId flowId;
     private ExecutionStatus executionStatus;
-    private T context;
-    private List<ActionExecution> actionExecutions;
+    private T input;
+    private C context;
+    private Map<String, ActionExecutionOrder> actionExecutions;
 
 
-    public void addActionExecution(ActionExecution actionExecution) {
+    public void addActionExecution(ActionExecutionOrder actionExecution) {
         if (actionExecutions == null) {
-            actionExecutions = new ArrayList<>();
+            actionExecutions = new HashMap<>();
         }
-        this.actionExecutions.add(actionExecution);
+        this.actionExecutions.put(actionExecution.getActionName(), actionExecution);
+    }
+
+    public ActionExecution getActionExecution(String actionName) {
+        return actionExecutions.get(actionName).getActionExecution();
     }
 
 }

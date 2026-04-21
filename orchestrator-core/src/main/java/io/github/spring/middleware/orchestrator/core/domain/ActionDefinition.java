@@ -1,5 +1,6 @@
 package io.github.spring.middleware.orchestrator.core.domain;
 
+import io.github.spring.middleware.orchestrator.core.domain.commons.CommonActions;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,4 +25,23 @@ public class ActionDefinition {
     // Maps to "finalAction" in json
     private boolean finalAction;
 
+    public static ActionDefinition ERROR_ACTION = new ActionDefinition(
+            CommonActions.ERROR,
+            ActionType.CONSUMER,
+            null,
+            null,
+            null,
+            false,
+            true
+    );
+
+    public static ActionDefinition END_ACTION = new ActionDefinition(
+            CommonActions.END,
+            ActionType.CONSUMER,
+            null,
+            null,
+            null,
+            false,
+            true
+    );
 }

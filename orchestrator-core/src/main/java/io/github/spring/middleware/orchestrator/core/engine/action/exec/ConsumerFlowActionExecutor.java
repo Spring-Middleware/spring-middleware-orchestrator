@@ -5,11 +5,13 @@ import io.github.spring.middleware.orchestrator.core.engine.ExecutionContextMana
 import io.github.spring.middleware.orchestrator.core.engine.action.ConsumerAction;
 import io.github.spring.middleware.orchestrator.core.engine.action.FlowExecutionActionRequest;
 import io.github.spring.middleware.orchestrator.core.engine.action.FlowNextActionResolver;
+import io.github.spring.middleware.orchestrator.core.engine.action.FunctionAction;
 import io.github.spring.middleware.orchestrator.core.port.ActionRegistry;
 import io.github.spring.middleware.orchestrator.core.port.FlowExecutionRegistry;
 import io.github.spring.middleware.orchestrator.core.runtime.ActionExecution;
 import io.github.spring.middleware.orchestrator.core.runtime.ActionExecutionContext;
 import io.github.spring.middleware.orchestrator.core.runtime.ExecutionContext;
+import io.github.spring.middleware.orchestrator.core.runtime.ExecutionStatus;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -44,14 +46,16 @@ public class ConsumerFlowActionExecutor extends CommonFlowActionExecutor {
 
             ActionExecutionContext actionExecutionContext = new ActionExecutionContext();
 
+            T payload = parsePayload(flowExecutionActionRequest.getPayload(), consumerAction , ConsumerAction.class, consumerAction::parsePayload);
+
             if (!actionDefinition.isFinalAction()) {
-                persistExecutionContext(executionContext, actionDefinition);
+                persistExecutionContext(executionContext, actionDefinition, payload);
             }
 
             consumerAction.consume(
                     executionContext,
                     actionExecutionContext,
-                    flowExecutionActionRequest.getPayload()
+                    payload
             );
 
             if (!actionExecutionContext.isEmpty()) {
@@ -63,6 +67,8 @@ public class ConsumerFlowActionExecutor extends CommonFlowActionExecutor {
 
             if (actionDefinition.isFinalAction()) {
                 endFlow(executionContext);
+            }else{
+                executionContext.getFlowExecution().setExecutionStatus(ExecutionStatus.SUSPENDED);
             }
 
         } catch (Exception ex) {

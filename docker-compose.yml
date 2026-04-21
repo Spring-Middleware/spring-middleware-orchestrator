@@ -1,0 +1,50 @@
+version: '3.8'
+name: orchestrator-network
+
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
+    # profiles: ["infra"] # Comentado para que arranque por defecto al usar 'docker-compose up', puedes descomentarlo si prefieres usar perfiles.
+    restart: always
+    ports:
+      - "27018:27017" # Expuesto para acceso local si corres la app fuera de docker
+    environment:
+      MONGO_INITDB_DATABASE: orchestrator
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - orchestrator-net
+
+  orchestrator-demo:
+    build:
+      context: ./orchestrator-demo
+      args:
+        JAR_FILE: target/*.jar # Sobrescribimos el ARG asumiendo que el jar se genera en la carpeta target/ standard
+    container_name: orchestrator-demo
+    restart: on-failure
+    ports:
+      - "8080:8080" # Puerto por defecto de Spring Boot
+      - "5005:5005" # Puerto para depuración remota
+    environment:
+      - JAVA_TOOL_OPTIONS=--enable-preview -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -Djava.net.preferIPv4Stack=true -Dio.netty.resolver.dns.ndots=1 -Dio.netty.resolver.dns.noSearchDomains=true -Dio.netty.resolver.dns.queryTimeoutMillis=10000
+      - MONGO_URI=mongodb://mongo:27017/orchestrator
+      - KAFKA_ENABLED=true
+      - KAFKA_BOOTSTRAP_SERVERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
+      - KAFKA_ERROR_HANDLING_ENABLED=true
+      - KAFKA_ERROR_HANDLING_MAX_RETRIES=3
+      - KAFKA_ERROR_HANDLING_RETRY_BACKOFF_MS=1000
+      - KAFKA_ERROR_HANDLING_DEAD_LETTER_ENABLED=true
+    depends_on:
+      - mongo
+    networks:
+      - orchestrator-net
+
+volumes:
+  mongo-data:
+
+networks:
+  orchestrator-net:
+    name: orchestrator-net
+    driver: bridge
+

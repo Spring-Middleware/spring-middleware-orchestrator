@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -28,6 +29,13 @@ public class FlowController {
         UUID flowExecutionId = flowExecutor.startFlow(flowTrigger);
         return ResponseEntity.accepted().body(flowExecutionId);
     }
+
+    @PostMapping("/resume/{flowExecutionId}")
+    public <T> ResponseEntity<UUID> resumeFlow(@PathVariable UUID flowExecutionId, @RequestParam("action") String action, @RequestBody T context) {
+        flowExecutor.resumeFlow(flowExecutionId, action, context);
+        return ResponseEntity.accepted().body(flowExecutionId);
+    }
+
 
     @GetMapping("/{flowExecutionId}")
     public ResponseEntity<FlowExecution> getFlowExecution(@PathVariable UUID flowExecutionId) {

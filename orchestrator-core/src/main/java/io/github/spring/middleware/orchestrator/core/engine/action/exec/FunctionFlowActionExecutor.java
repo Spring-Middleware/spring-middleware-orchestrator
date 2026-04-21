@@ -34,62 +34,62 @@ public class FunctionFlowActionExecutor extends CommonFlowActionExecutor {
     }
 
 
-    public <T, R> FlowExecutionActionRequest executionActionRequest(FlowExecutionActionRequest flowExecutionActionRequest) {
+    @SuppressWarnings("unchecked")
+    public <T, R> FlowExecutionActionRequest<?> executionActionRequest(FlowExecutionActionRequest<?> request) {
         ActionExecution.ActionExecutionBuilder actionExecutionBuilder = ActionExecution.builder()
-                .actionName(flowExecutionActionRequest.getActionName())
+                .actionName(request.getActionName())
                 .executed(Boolean.FALSE);
 
-        ExecutionContext executionContext = flowExecutionActionRequest.getExecutionContext();
+        ExecutionContext executionContext = request.getExecutionContext();
 
         try {
             FunctionAction<T, R> functionAction =
-                    actionRegistry.getAction(flowExecutionActionRequest.getActionName(), FunctionAction.class);
+                    actionRegistry.getAction(request.getActionName(), FunctionAction.class);
 
-            ActionExecutorUtils.configureAction(functionAction, flowExecutionActionRequest.getActionDefinition());
+            ActionExecutorUtils.configureAction(functionAction, request.getActionDefinition());
 
             ActionExecutionContext actionExecutionContext = new ActionExecutionContext();
+
+            T payload = parsePayload(request.getPayload(), functionAction, FunctionAction.class, functionAction::parsePayload);
 
             R result = functionAction.apply(
                     executionContext,
                     actionExecutionContext,
-                    (T) flowExecutionActionRequest.getPayload()
+                    payload
             );
 
             if (!actionExecutionContext.isEmpty()) {
                 actionExecutionBuilder.context(actionExecutionContext);
             }
 
+
             actionExecutionBuilder.executed(Boolean.TRUE);
-            actionExecutionBuilder.executionDatetime(LocalDateTime.now());
 
-            ActionExecution actionExecution = actionExecutionBuilder.build();
-            addActionExecutionToFlowExecution(executionContext, actionExecution);
-
-            if (flowExecutionActionRequest.getActionDefinition().isFinalAction()) {
+            if (request.getActionDefinition().isFinalAction()) {
                 endFlow(executionContext);
                 return null;
             }
 
             FlowExecutionNextAction flowExecutionNextAction = flowNextActionResolver.getNextAction(
-                    flowExecutionActionRequest.getFlowDefinition(),
+                    request.getFlowDefinition(),
                     executionContext,
-                    flowExecutionActionRequest.getActionName(),
+                    request.getActionName(),
                     result
             );
 
             return FlowExecutionActionRequest.builder()
-                    .flowDefinition(flowExecutionActionRequest.getFlowDefinition())
+                    .flowDefinition(request.getFlowDefinition())
                     .executionContext(executionContext)
                     .actionDefinition(flowExecutionNextAction.getActionDefinition())
                     .payload(flowExecutionNextAction.getNextActionResolverResult().getResult())
                     .build();
 
         } catch (Exception ex) {
-            processActionException(executionContext, flowExecutionActionRequest, actionExecutionBuilder, ex);
-            actionExecutionBuilder.executionDatetime(LocalDateTime.now());
-            ActionExecution actionExecution = actionExecutionBuilder.build();
-            addActionExecutionToFlowExecution(executionContext, actionExecution);
+            processActionException(executionContext, request, actionExecutionBuilder, ex);
             return null;
+        } finally {
+            actionExecutionBuilder.executionDatetime(LocalDateTime.now());
+            addActionExecutionToFlowExecution(executionContext, actionExecutionBuilder.build());
         }
     }
 

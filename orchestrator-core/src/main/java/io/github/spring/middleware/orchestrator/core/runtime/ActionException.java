@@ -6,4 +6,7 @@ public class ActionException extends RuntimeException {
         super(message);
     }
 
+    public ActionException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

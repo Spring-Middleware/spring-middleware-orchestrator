@@ -4,14 +4,18 @@ import io.github.spring.middleware.orchestrator.core.domain.ActionDefinition;
 import io.github.spring.middleware.orchestrator.core.domain.ActionType;
 import io.github.spring.middleware.orchestrator.core.domain.FlowDefinition;
 import io.github.spring.middleware.orchestrator.core.domain.FlowId;
+import io.github.spring.middleware.orchestrator.core.domain.params.NextActionResolverParams;
 import io.github.spring.middleware.orchestrator.core.engine.action.FlowExecutionActionRequest;
 import io.github.spring.middleware.orchestrator.core.engine.action.exec.FlowActionExecutor;
 import io.github.spring.middleware.orchestrator.core.port.FlowExecutionRegistry;
+import io.github.spring.middleware.orchestrator.core.port.NextActionResolverRegistry;
 import io.github.spring.middleware.orchestrator.core.runtime.ActionException;
 import io.github.spring.middleware.orchestrator.core.runtime.ExecutionContext;
+import io.github.spring.middleware.orchestrator.core.runtime.ExecutionStatus;
 import io.github.spring.middleware.orchestrator.core.runtime.FlowExecution;
 import io.github.spring.middleware.orchestrator.core.runtime.FlowExecutionTimeout;
 import io.github.spring.middleware.orchestrator.core.runtime.FlowTrigger;
+import io.github.spring.middleware.orchestrator.core.runtime.NextActionResolverResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -30,7 +34,7 @@ public class FlowExecutor {
     private final FlowExecutionRegistry flowExecutionRegistry;
     private final ExecutionContextManager executionContextManager;
     private final FlowActionExecutor flowActionExecutor;
-    private final TimeoutRedirectResolverRegistry timeoutRedirectResolverRegistry;
+    private final NextActionResolverRegistry nextActionResolverRegistry;
     private final Executor flowExecutorTaskExecutor;
 
 
@@ -40,7 +44,7 @@ public class FlowExecutor {
                 flowTrigger.getPayload()
         );
 
-        ExecutionContext executionContext = new ExecutionContext(flowExecution);
+        ExecutionContext executionContext = new ExecutionContext(flowExecution, flowTrigger.getPayload());
         executionContextManager.addExecutionContext(executionContext);
 
         FlowDefinition flowDefinition = flowDefinitionRegistry.getFlowDefinition(
@@ -52,6 +56,9 @@ public class FlowExecutor {
             throw new IllegalStateException(
                     STR."Flow definition not found for flowId: \{flowTrigger.getFlowId()}"
             );
+        }else{
+
+
         }
 
         ActionDefinition firstAction = flowDefinition.getFirstAction();
@@ -69,20 +76,7 @@ public class FlowExecutor {
                 .payload(flowTrigger.getPayload())
                 .build();
 
-        CompletableFuture.runAsync(() -> {
-            FlowExecutionActionRequest<?> current = flowExecutionActionRequest;
-
-            try {
-                while (current != null) {
-                    current = flowActionExecutor.execute(current);
-                }
-            } catch (Exception ex) {
-                log.error("Error executing async flow {}", flowExecution.getId(), ex);
-            } finally {
-                executionContextManager.removeExecutionContext(flowExecution.getId());
-            }
-        }, flowExecutorTaskExecutor);
-
+        executeFlowAsync(flowExecutionActionRequest, flowExecution);
         return flowExecution.getId();
     }
 
@@ -110,6 +104,11 @@ public class FlowExecutor {
             );
         }
 
+        if (flowExecution.getExecutionStatus() != ExecutionStatus.SUSPENDED) {
+            log.warn("Trying to resume flow execution with id: {} but its status is not SUSPENDED", flowExecutionId);
+            return;
+        }
+
         ExecutionContext executionContext = executionContextManager.loadExecutionContext(
                 flowExecution,
                 actionDefinition.isRemoveContextOnLoad()
@@ -122,11 +121,70 @@ public class FlowExecutor {
                 .payload(context)
                 .build();
 
+        executeFlowAsync(flowExecutionActionRequest, flowExecution);
+    }
+
+    public <T, P> void redirectFlow(FlowExecutionTimeout flowExecutionTimeout) {
+        String resolverName = flowExecutionTimeout.timeoutDefinition().getResolver();
+
+        NextActionResolver nextActionResolver = nextActionResolverRegistry.getNextActionResolver(resolverName);
+        if (nextActionResolver == null) {
+            throw new IllegalStateException("Default timeout redirect resolver not found");
+        }
+
+        FlowExecution flowExecution = flowExecutionRegistry.findById(flowExecutionTimeout.flowExecutionId())
+                .orElseThrow(() -> new IllegalStateException(
+                        STR."Flow execution not found for id: \{flowExecutionTimeout.flowExecutionId()}"
+                ));
+
+        if (flowExecution.getExecutionStatus() != ExecutionStatus.SUSPENDED) {
+            log.warn("Trying to redirect flow execution with id: {} but its status is not SUSPENDED", flowExecutionTimeout.flowExecutionId());
+            return;
+        }
+
+        FlowDefinition flowDefinition = flowDefinitionRegistry.getFlowDefinition(flowExecution.getFlowId());
+        if (flowDefinition == null) {
+            throw new IllegalStateException(
+                    STR."Flow definition not found for flowId: \{flowExecution.getFlowId()}"
+            );
+        }
+
+        ExecutionContext executionContext = executionContextManager.loadExecutionContext(
+                flowExecution,
+                flowExecutionTimeout.timeoutDefinition().isRemoveContextOnLoad()
+        );
+
+        P nextActionParams = (P) nextActionResolver.parseParams(flowExecutionTimeout.timeoutDefinition().getParameters());
+        NextActionResolverResult nextActionResolverResult = nextActionResolver.resolveNextAction(executionContext, executionContext.getPayload(), (NextActionResolverParams) nextActionParams);
+
+        ActionDefinition actionDefinition = flowDefinition.getAction(nextActionResolverResult.getNextAction());
+        if (actionDefinition == null) {
+            throw new IllegalStateException(
+                    STR."Action definition not found for action: \{nextActionResolverResult.getNextAction()} in flowId: \{flowExecution.getFlowId()}"
+            );
+        }
+
+        FlowExecutionActionRequest<T> flowExecutionActionRequest = FlowExecutionActionRequest.<T>builder()
+                .flowDefinition(flowDefinition)
+                .actionDefinition(actionDefinition)
+                .executionContext(executionContext)
+                .payload((T) nextActionResolverResult.getResult())
+                .build();
+
+        executeFlowAsync(flowExecutionActionRequest, flowExecution);
+    }
+
+
+    private void executeFlowAsync(FlowExecutionActionRequest flowExecutionActionRequest, FlowExecution flowExecution) {
         CompletableFuture.runAsync(() -> {
             FlowExecutionActionRequest<?> current = flowExecutionActionRequest;
 
             try {
                 while (current != null) {
+                    if (flowExecution.getExecutionStatus() != ExecutionStatus.EXECUTING) {
+                        flowExecution.setExecutionStatus(ExecutionStatus.EXECUTING);
+                        flowExecutionRegistry.updateFlowExecution(flowExecution);
+                    }
                     current = flowActionExecutor.execute(current);
                 }
             } catch (Exception ex) {
@@ -135,21 +193,6 @@ public class FlowExecutor {
                 executionContextManager.removeExecutionContext(flowExecution.getId());
             }
         }, flowExecutorTaskExecutor);
-    }
-
-    public <T> void redirectFlow(FlowExecutionTimeout flowExecutionTimeout) {
-        String resolverName = flowExecutionTimeout.timeoutDefinition().getOnTimeoutResolver();
-
-        TimeoutRedirectResolver timeoutRedirectResolver = timeoutRedirectResolverRegistry.get(resolverName);
-        if (timeoutRedirectResolver == null) {
-            throw new IllegalStateException("Default timeout redirect resolver not found");
-        }
-
-        resumeFlow(
-                flowExecutionTimeout.flowExecutionId(),
-                timeoutRedirectResolver.redirectAction(),
-                timeoutRedirectResolver.getContext()
-        );
     }
 
 

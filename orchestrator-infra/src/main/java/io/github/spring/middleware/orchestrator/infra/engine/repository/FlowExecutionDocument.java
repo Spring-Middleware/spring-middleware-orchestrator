@@ -1,20 +1,24 @@
 package io.github.spring.middleware.orchestrator.infra.engine.repository;
 
-import io.github.spring.middleware.orchestrator.core.runtime.ActionExecution;
+import io.github.spring.middleware.orchestrator.core.runtime.ActionExecutionOrder;
 import io.github.spring.middleware.orchestrator.core.runtime.ExecutionStatus;
-import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
-@Builder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Document(collection = "flow_executions")
-public class FlowExecutionDocument<T> {
+public class FlowExecutionDocument {
 
     @Id
     private UUID id;
@@ -23,7 +27,8 @@ public class FlowExecutionDocument<T> {
     private LocalDateTime endDateTime;
     private String flowId;
     private ExecutionStatus executionStatus;
+    private Object input;
     private Object context;
-    private List<ActionExecution> actionExecutions;
+    private Map<String, ActionExecutionOrder> actionExecutions;
 
 }

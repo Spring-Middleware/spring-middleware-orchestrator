@@ -9,11 +9,12 @@ import java.util.UUID;
 
 @Data
 @Builder
-public class ExecutionContextPersisted {
+public class ExecutionContextPersisted<T> {
 
     private UUID flowExecutionId;
     private LocalDateTime creationDateTime;
     private String actionName;
+    private T payload;
     private Map<String, Object> context;
 
 }
