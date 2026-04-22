@@ -8,10 +8,7 @@ import io.github.spring.middleware.orchestrator.core.domain.NextActionDefinition
 import io.github.spring.middleware.orchestrator.core.engine.ExecutionContextManager;
 import io.github.spring.middleware.orchestrator.core.engine.action.FlowExecutionActionRequest;
 import io.github.spring.middleware.orchestrator.core.engine.action.FlowNextActionResolver;
-import io.github.spring.middleware.orchestrator.core.engine.action.FunctionAction;
-import io.github.spring.middleware.orchestrator.core.port.ActionRegistry;
 import io.github.spring.middleware.orchestrator.core.port.FlowExecutionRegistry;
-import io.github.spring.middleware.orchestrator.core.runtime.ActionExecutionContext;
 import io.github.spring.middleware.orchestrator.core.runtime.ExecutionContext;
 import io.github.spring.middleware.orchestrator.core.runtime.ExecutionStatus;
 import io.github.spring.middleware.orchestrator.core.runtime.FlowExecution;
@@ -23,14 +20,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,10 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class FunctionFlowActionExecutorTest {
-
-    @Mock
-    private ActionRegistry actionRegistry;
+class ResumeFlowActionExecutorTest {
 
     @Mock
     private FlowNextActionResolver flowNextActionResolver;
@@ -51,11 +42,8 @@ class FunctionFlowActionExecutorTest {
     @Mock
     private FlowExecutionRegistry flowExecutionRegistry;
 
-    @Mock
-    private ExecutionContextManager executionContextManager;
-
     @InjectMocks
-    private FunctionFlowActionExecutor executor;
+    private ResumeFlowActionExecutor executor;
 
     private FlowExecutionActionRequest<?> flowExecutionActionRequest;
     private ActionDefinition actionDefinition;
@@ -66,13 +54,12 @@ class FunctionFlowActionExecutorTest {
     @BeforeEach
     void setUp() {
         actionDefinition = new ActionDefinition();
-        actionDefinition.setActionName("testFunction");
-        actionDefinition.setActionType(ActionType.FUNCTION);
+        actionDefinition.setActionName("testResume");
+        actionDefinition.setActionType(ActionType.RESUME);
 
         flowExecution = new FlowExecution<>();
         flowExecution.setId(UUID.randomUUID());
         flowExecution.setFlowId(new FlowId("testFlow"));
-
 
         executionContext = new ExecutionContext<>(flowExecution, "initialPayload");
 
@@ -87,20 +74,14 @@ class FunctionFlowActionExecutorTest {
                 .flowDefinition(flowDefinition)
                 .payload("testPayload")
                 .build();
-
     }
 
     @Test
     void execute_SuccessWithNextAction() {
-        @SuppressWarnings("unchecked")
-        FunctionAction<Object, Object> mockAction = mock(FunctionAction.class);
-        when(mockAction.parsePayload(any())).thenReturn("parsedPayload");
-        when(mockAction.apply(any(), any(), any())).thenReturn("resultPayload");
-        when(actionRegistry.getAction(eq(actionDefinition.getActionName()), any())).thenReturn(mockAction);
-
         NextActionDefinition nextActionDef = new NextActionDefinition();
         nextActionDef.setResolver("testResolver");
         actionDefinition.setNextAction(nextActionDef);
+        actionDefinition.setFinalAction(false);
 
         NextActionResolverResult<?> resolverResult = NextActionResolverResult.builder()
                 .nextAction("nextAction")
@@ -109,7 +90,7 @@ class FunctionFlowActionExecutorTest {
 
         FlowExecutionNextAction flowExecutionNextAction = mock(FlowExecutionNextAction.class);
 
-        when(flowNextActionResolver.getNextAction(eq(flowDefinition),any(),any(),any())).thenReturn(flowExecutionNextAction);
+        when(flowNextActionResolver.getNextAction(eq(flowDefinition), any(), eq("testResume"), any())).thenReturn(flowExecutionNextAction);
         when(flowExecutionNextAction.getActionDefinition()).thenReturn(ActionDefinition.builder().actionName("nextAction").build());
         when(flowExecutionNextAction.getNextActionResolverResult()).thenReturn(resolverResult);
 
@@ -117,73 +98,49 @@ class FunctionFlowActionExecutorTest {
 
         assertNotNull(nextRequest);
         assertEquals("nextPayload", nextRequest.getPayload());
-        assertEquals("nextAction", nextRequest.getActionName());
+        assertEquals("nextAction", nextRequest.getActionDefinition().getActionName());
         assertEquals(executionContext, nextRequest.getExecutionContext());
 
         verify(flowExecutionRegistry).updateFlowExecution(flowExecution);
+
+        io.github.spring.middleware.orchestrator.core.runtime.ActionExecution execution = flowExecution.getActionExecution("testResume");
+        assertNotNull(execution);
+        assertEquals(true, execution.getExecuted());
     }
 
     @Test
     void execute_FinalAction() {
-        @SuppressWarnings("unchecked")
-        FunctionAction<Object, Object> mockAction = mock(FunctionAction.class);
-        when(mockAction.parsePayload(any())).thenReturn("parsedPayload");
-        when(mockAction.apply(any(), any(), any())).thenReturn("resultPayload");
-        when(actionRegistry.getAction(eq(actionDefinition.getActionName()), any())).thenReturn(mockAction);
-
         actionDefinition.setFinalAction(true);
 
         FlowExecutionActionRequest<?> nextRequest = executor.executionActionRequest(flowExecutionActionRequest);
 
         assertNull(nextRequest);
         assertEquals(ExecutionStatus.EXECUTED, executionContext.getFlowExecution().getExecutionStatus());
-    }
 
-    @Test
-    void execute_WithActionContextValues() {
-        @SuppressWarnings("unchecked")
-        FunctionAction<Object, Object> mockAction = mock(FunctionAction.class);
-        when(mockAction.parsePayload(any())).thenReturn("parsedPayload");
+        verify(flowExecutionRegistry).updateFlowExecution(flowExecution);
 
-        when(mockAction.apply(any(), any(), any())).thenAnswer(invocation -> {
-            ActionExecutionContext context = invocation.getArgument(1);
-            context.put("keyTest", "valueTest");
-            return "resultPayload";
-        });
-
-        when(actionRegistry.getAction(eq(actionDefinition.getActionName()), any())).thenReturn(mockAction);
-        actionDefinition.setFinalAction(true);
-
-        FlowExecutionActionRequest<?> nextRequest = executor.executionActionRequest(flowExecutionActionRequest);
-
-        assertNull(nextRequest);
-
-        io.github.spring.middleware.orchestrator.core.runtime.ActionExecution execution = flowExecution.getActionExecution("testFunction");
+        io.github.spring.middleware.orchestrator.core.runtime.ActionExecution execution = flowExecution.getActionExecution("testResume");
         assertNotNull(execution);
-        assertNotNull(execution.getContext());
-        assertEquals("valueTest", execution.getContext().get("keyTest"));
+        assertEquals(true, execution.getExecuted());
     }
 
     @Test
     void execute_ThrowsException() {
-        @SuppressWarnings("unchecked")
-        FunctionAction<Object, Object> mockAction = mock(FunctionAction.class);
-        when(mockAction.parsePayload(any())).thenReturn("parsedPayload");
+        when(flowNextActionResolver.getNextAction(any(), any(), any(), any())).thenThrow(new RuntimeException("Error resolving next action"));
 
-        when(mockAction.apply(any(), any(), any())).thenThrow(new RuntimeException("Error executing action"));
-        when(actionRegistry.getAction(eq(actionDefinition.getActionName()), any())).thenReturn(mockAction);
+        actionDefinition.setFinalAction(false);
 
         FlowExecutionActionRequest<?> nextRequest = executor.executionActionRequest(flowExecutionActionRequest);
 
         assertNull(nextRequest);
-
         assertEquals(ExecutionStatus.ERROR, executionContext.getFlowExecution().getExecutionStatus());
 
-        io.github.spring.middleware.orchestrator.core.runtime.ActionExecution execution = flowExecution.getActionExecution("testFunction");
-        assertNotNull(execution);
-        assertFalse(execution.getExecuted());
-        assertEquals("Error executing action", execution.getError());
-
         verify(flowExecutionRegistry).updateFlowExecution(flowExecution);
+
+        io.github.spring.middleware.orchestrator.core.runtime.ActionExecution execution = flowExecution.getActionExecution("testResume");
+        assertNotNull(execution);
+        assertNotNull(execution.getError());
+        assertEquals("Error resolving next action", execution.getError());
     }
 }
+

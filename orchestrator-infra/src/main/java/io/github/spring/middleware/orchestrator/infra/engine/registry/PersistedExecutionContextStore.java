@@ -35,10 +35,15 @@ public class PersistedExecutionContextStore implements ExecutionContextStore {
 
     public ExecutionContext loadContext(FlowExecution flowExecution) {
         ExecutionContextPersistedDocument executionContextPersistedDocument = executionContextPersistedRepository.findById(flowExecution.getId()).orElse(null);
+
+        if (executionContextPersistedDocument == null) {
+            return null;
+        }
+
         ExecutionContext executionContext = new ExecutionContext(flowExecution, executionContextPersistedDocument.getPayload());
-        if (executionContextPersistedDocument != null) {
-            ExecutionContextPersisted executionContextPersisted = toDomain(executionContextPersistedDocument);
-            Map<String, Object> context = executionContextPersisted.getContext();
+        ExecutionContextPersisted executionContextPersisted = toDomain(executionContextPersistedDocument);
+        Map<String, Object> context = executionContextPersisted.getContext();
+        if (context != null) {
             context.entrySet().forEach(entry -> executionContext.put(entry.getKey(), entry.getValue()));
         }
         return executionContext;

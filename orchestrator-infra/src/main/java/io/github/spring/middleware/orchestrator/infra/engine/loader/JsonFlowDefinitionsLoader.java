@@ -34,9 +34,17 @@ public class JsonFlowDefinitionsLoader implements FlowDefinitionsLoader {
 
             List<FlowDefinition> flowDefinitions = new ArrayList<>();
             for (Resource resource : resources) {
-                FlowDefinition flowDefinition = loadFlowDefinition(resource);
-                flowDefinition.buildActionDefinitionMap();
-                flowDefinitions.add(flowDefinition);
+                try {
+                    FlowDefinition flowDefinition = loadFlowDefinition(resource);
+                    flowDefinition.buildActionDefinitionMap();
+                    if (flowDefinition.getFirstAction() == null) {
+                        log.warn("Flow definition in resource {} does not have a valid firstAction, skipping...", safeDescription(resource));
+                        continue;
+                    }
+                    flowDefinitions.add(flowDefinition);
+                } catch (Exception ex) {
+                    log.error("Error loading flow definition from resource {}, skipping...", safeDescription(resource), ex);
+                }
             }
 
             return flowDefinitions;
@@ -48,15 +56,9 @@ public class JsonFlowDefinitionsLoader implements FlowDefinitionsLoader {
         }
     }
 
-    private FlowDefinition loadFlowDefinition(Resource resource) {
+    private FlowDefinition loadFlowDefinition(Resource resource) throws Exception {
         try (InputStream inputStream = resource.getInputStream()) {
             return objectMapper.readValue(inputStream, FlowDefinition.class);
-        } catch (Exception ex) {
-            String description = safeDescription(resource);
-            log.error("Error loading flow definition from resource {}", description, ex);
-            throw new FlowDefinitionsLoaderException(
-                    STR."Error loading flow definition from resource \{description}", ex
-            );
         }
     }
 

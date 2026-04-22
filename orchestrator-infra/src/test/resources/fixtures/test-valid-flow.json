@@ -1,0 +1,12 @@
+{
+  "flowId": {
+    "value": "123-test-flow"
+  },
+  "actions": [
+    {
+      "actionName": "ACTION_ONE",
+      "actionType": "CONSUMER",
+      "actionClazz": "com.test.TestAction"
+    }
+  ]
+}

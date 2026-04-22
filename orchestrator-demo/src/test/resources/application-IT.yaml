@@ -1,0 +1,66 @@
+server:
+  port: 0
+  servlet:
+    context-path: /demo
+
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27018/orchestrator}
+      uuid-representation: standard
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    io.github.spring.middleware: :INFO
+    io.github.spring.middleware.scheduler: ERROR
+    io.github.spring:.middleware.jms: ERROR
+    org.springframework.security: ERROR
+    org.springframework.security.web: ERROR
+    root: ERROR
+
+middleware:
+  clients:
+    enabled: false
+  security:
+    type: NONE
+    public-paths:
+      - /graphql
+      - /resources/register
+      - /api-docs/**
+      - /swagger-ui.html
+      - /swagger-ui/**
+      - /flows/**
+
+  kafka:
+    enabled: true
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    create-missing-topics: true
+    topics:
+      - name: flow-execution-events
+        partitions: 1
+        replication-factor: 1
+
+    error-handling:
+      enabled: true
+      max-retries: 3
+      retry-backoff-ms: 1000
+      dead-letter:
+        enabled: true
+        suffix: .DLT
+
+    publishers:
+      orchestrator-publisher:
+        topic: flow-execution-events
+
+    subscribers:
+      orchestrator-subscriber:
+        group-id: orchestrator-group
+        topic: flow-execution-events
+        concurrency: 1
+
