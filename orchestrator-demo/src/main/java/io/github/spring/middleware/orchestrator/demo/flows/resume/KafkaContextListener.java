@@ -19,7 +19,7 @@ public class KafkaContextListener {
         log.info("Received Kafka event with payload: {}", eventEnvelope.getPayload());
         ContextEvent contextEvent = eventEnvelope.getPayload();
         if (contextEvent.getResumeType() == ResumeType.RESUME) {
-            flowExecutor.resumeFlow(contextEvent.getFlowExecutionId(), "RESUME_CONTEXT_ACTION", null);
+            flowExecutor.resumeFlow(contextEvent.getFlowExecutionId(), "RESUME_CONTEXT_ACTION");
         }
     }
 }

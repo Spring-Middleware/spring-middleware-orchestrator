@@ -42,6 +42,7 @@ public class CommonFlowActionExecutor {
                                           ActionExecution.ActionExecutionBuilder actionExecutionBuilder, Exception ex) {
 
         log.error(STR."Error on action \{flowExecutionActionRequest.getActionDefinition().getActionName()}", ex);
+        executionContext.getFlowExecution().setEndDateTime(LocalDateTime.now());
         executionContext.getFlowExecution().setExecutionStatus(ExecutionStatus.ERROR);
         actionExecutionBuilder.error(ExceptionUtils.getNotNullMessage(ex));
     }

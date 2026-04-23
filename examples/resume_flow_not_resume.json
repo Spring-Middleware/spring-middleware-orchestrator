@@ -1,5 +1,5 @@
 {
-  "flowId": "CONTEXT_FLOW",
+  "flowId": "RESUME_FLOW",
   "payload": {
     "key": "11111",
     "resumeType": "NOT_RESUME"

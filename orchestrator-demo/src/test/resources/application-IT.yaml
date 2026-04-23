@@ -17,12 +17,19 @@ springdoc:
 
 logging:
   level:
-    io.github.spring.middleware: :INFO
+    io.github.spring.middleware: INFO
     io.github.spring.middleware.scheduler: ERROR
     io.github.spring:.middleware.jms: ERROR
     org.springframework.security: ERROR
     org.springframework.security.web: ERROR
     root: ERROR
+
+
+
+orchestrator:
+  flows-location: classpath:/flows_test/*.json
+  redirect-scheduler:
+    fixed-rate-string: 5000
 
 middleware:
   clients:

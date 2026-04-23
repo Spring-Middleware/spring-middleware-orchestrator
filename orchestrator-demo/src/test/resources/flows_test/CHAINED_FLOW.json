@@ -1,0 +1,33 @@
+{
+  "flowId": {
+    "value": "CHAINED_FLOW"
+  },
+  "firstAction": "FIRST_CHAINED_ACTION",
+  "actions": [
+    {
+      "actionName": "FIRST_CHAINED_ACTION",
+      "actionType": "FUNCTION",
+      "nextAction": {
+        "resolver": "FIXED_NEXT_ACTION",
+        "parameters": {
+          "nextAction": "SECOND_CHAINED_ACTION"
+        }
+      }
+    },
+    {
+      "actionName": "SECOND_CHAINED_ACTION",
+      "actionType": "FUNCTION",
+      "nextAction": {
+        "resolver": "FIXED_NEXT_ACTION",
+        "parameters": {
+          "nextAction": "THIRD_CHAINED_ACTION"
+        }
+      }
+    },
+    {
+      "actionName": "THIRD_CHAINED_ACTION",
+      "actionType": "CONSUMER",
+      "finalAction": "true"
+    }
+  ]
+}

@@ -1,8 +1,11 @@
 package io.github.spring.middleware.orchestrator.core.runtime;
 
+import lombok.Data;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@Data
 public class ActionExecutionContext {
 
     private Map<String, Object> data = new HashMap<>();

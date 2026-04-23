@@ -80,7 +80,7 @@ public class FlowExecutor {
         return flowExecution.getId();
     }
 
-    public <T> void resumeFlow(UUID flowExecutionId, String currentAction, T context) {
+    public <T> void resumeFlow(UUID flowExecutionId, String currentAction) {
         FlowExecution flowExecution = flowExecutionRegistry.findById(flowExecutionId)
                 .orElseThrow(() -> new ActionException(
                         STR."Flow execution not found for id: \{flowExecutionId}"
@@ -118,7 +118,7 @@ public class FlowExecutor {
                 .flowDefinition(flowDefinition)
                 .actionDefinition(actionDefinition)
                 .executionContext(executionContext)
-                .payload(context)
+                .payload((T) executionContext.getPayload())
                 .build();
 
         executeFlowAsync(flowExecutionActionRequest, flowExecution);

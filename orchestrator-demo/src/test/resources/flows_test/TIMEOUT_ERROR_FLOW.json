@@ -1,0 +1,39 @@
+{
+  "flowId": {
+    "value": "TIMEOUT_ERROR_FLOW"
+  },
+  "firstAction": "CREATE_CONTEXT_ACTION",
+  "actions": [
+    {
+      "actionName": "CREATE_CONTEXT_ACTION",
+      "actionType": "FUNCTION",
+      "nextAction": {
+        "resolver": "FIXED_NEXT_ACTION",
+        "parameters": {
+          "nextAction": "SEND_CONTEXT_ACTION"
+        }
+      }
+    },
+    {
+      "actionName": "SEND_CONTEXT_ACTION",
+      "actionType": "CONSUMER",
+      "timeout": {
+        "seconds": 5,
+        "resolver": "FIXED_NEXT_ACTION",
+        "parameters": {
+          "nextAction": "ERROR"
+        }
+      }
+    },
+    {
+      "actionName": "RESUME_CONTEXT_ACTION",
+      "actionType": "RESUME",
+      "nextAction": {
+        "resolver": "FIXED_NEXT_ACTION",
+        "parameters": {
+          "nextAction": "END"
+        }
+      }
+    }
+  ]
+}

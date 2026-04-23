@@ -31,8 +31,8 @@ public class FlowController {
     }
 
     @PostMapping("/resume/{flowExecutionId}")
-    public <T> ResponseEntity<UUID> resumeFlow(@PathVariable UUID flowExecutionId, @RequestParam("action") String action, @RequestBody T context) {
-        flowExecutor.resumeFlow(flowExecutionId, action, context);
+    public <T> ResponseEntity<UUID> resumeFlow(@PathVariable UUID flowExecutionId, @RequestParam("action") String action) {
+        flowExecutor.resumeFlow(flowExecutionId, action);
         return ResponseEntity.accepted().body(flowExecutionId);
     }
 

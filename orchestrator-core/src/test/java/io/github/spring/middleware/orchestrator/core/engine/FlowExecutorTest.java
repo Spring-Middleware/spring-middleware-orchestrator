@@ -146,7 +146,7 @@ class FlowExecutorTest {
             return null;
         }).when(flowExecutorTaskExecutor).execute(any(Runnable.class));
 
-        flowExecutor.resumeFlow(flowExecution.getId(), "resumeAction", "context");
+        flowExecutor.resumeFlow(flowExecution.getId(), "resumeAction");
 
         verify(flowActionExecutor).execute(any(FlowExecutionActionRequest.class));
     }
@@ -155,7 +155,7 @@ class FlowExecutorTest {
     void testResumeFlow_FlowExecutionNotFound() {
         when(flowExecutionRegistry.findById(any(UUID.class))).thenReturn(Optional.empty());
 
-        ActionException exception = assertThrows(ActionException.class, () -> flowExecutor.resumeFlow(UUID.randomUUID(), "resumeAction", "context"));
+        ActionException exception = assertThrows(ActionException.class, () -> flowExecutor.resumeFlow(UUID.randomUUID(), "resumeAction"));
         assertNotNull(exception.getMessage());
     }
 
@@ -170,7 +170,7 @@ class FlowExecutorTest {
         when(flowExecutionRegistry.findById(any(UUID.class))).thenReturn(Optional.of(flowExecution));
         when(flowDefinitionRegistry.getFlowDefinition(any(FlowId.class))).thenReturn(flowDefinition);
 
-        flowExecutor.resumeFlow(flowExecution.getId(), "resumeAction", "context");
+        flowExecutor.resumeFlow(flowExecution.getId(), "resumeAction");
 
         verify(executionContextManager, never()).loadExecutionContext(any(), anyBoolean());
         verify(flowActionExecutor, never()).execute(any());
@@ -216,7 +216,7 @@ class FlowExecutorTest {
         when(flowDefinitionRegistry.getFlowDefinition(any(FlowId.class))).thenReturn(flowDefinition);
 
         ActionException exception = assertThrows(ActionException.class,
-                () -> flowExecutor.resumeFlow(flowExecution.getId(), "unknownAction", "context"));
+                () -> flowExecutor.resumeFlow(flowExecution.getId(), "unknownAction"));
         assertEquals("Action definition not found for action: unknownAction in flowId: FlowId[value=testFlow]", exception.getMessage());
     }
 
@@ -232,7 +232,7 @@ class FlowExecutorTest {
         when(flowDefinitionRegistry.getFlowDefinition(any(FlowId.class))).thenReturn(flowDefinition);
 
         ActionException exception = assertThrows(ActionException.class,
-                () -> flowExecutor.resumeFlow(flowExecution.getId(), "notResumeAction", "context"));
+                () -> flowExecutor.resumeFlow(flowExecution.getId(), "notResumeAction"));
         assertEquals("Action definition for action: notResumeAction in flowId: FlowId[value=testFlow] is not of type RESUME", exception.getMessage());
     }
 
