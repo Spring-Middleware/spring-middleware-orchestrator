@@ -110,7 +110,7 @@ Used for:
 
 Important behavior:
 
-> If NOT `finalAction`, the flow **pauses automatically** and its state is persisted.
+> If NOT `finalAction`, the flow **pauses automatically** and its state (including the context and the payload) is **persisted to MongoDB**.
 
 ---
 
@@ -159,12 +159,12 @@ Examples you can build:
 1. Flow executes
 2. Hits a CONSUMER (non-final)
 3. Engine:
-    - Persists execution context
-    - Stops execution
-4. External system triggers resume
+    - **Persists the execution context (payload & flow state) to MongoDB**
+    - Stops execution (freeing up threads)
+4. External system triggers resume (e.g., via Kafka event or REST callback)
 5. Engine:
-    - Loads context
-    - Continues from RESUME action
+    - **Retrieves the exact context from MongoDB**
+    - Continues from the `RESUME` action with the state fully restored
 
 ---
 
