@@ -1,10 +1,17 @@
 # Spring Middleware Orchestrator
 
+[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.2-green.svg)](https://spring.io/projects/spring-boot)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.spring-middleware/bom.svg)](https://central.sonatype.com/artifact/io.github.spring-middleware/bom)
+![Status](https://img.shields.io/badge/status-active%20development-brightgreen)
+[![Architecture](https://img.shields.io/badge/Architecture-Microservices%20Platform-blueviolet.svg)](#architecture)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Lightweight, explicit flow orchestrator for Spring Boot microservices.  
 Designed to model **real execution flows** (not just chains of calls) with support for:
 
 - Dynamic routing
-- Pause / Resume
+- Pause / Resume (ideal for async messaging like Kafka)
 - External event continuation
 - Timeout-based redirection
 - Execution traceability
@@ -82,6 +89,7 @@ Each action:
 
 - Transforms input → output
 - Pure computation / enrichment
+- Executes sequentially until another type is encountered or flow ends
 
 Used for:
 - Build payloads
@@ -97,12 +105,12 @@ Used for:
 
 Used for:
 - Kafka publish
-- External calls
+- External API calls
 - Notifications
 
 Important behavior:
 
-> If NOT `finalAction`, the flow **pauses automatically**
+> If NOT `finalAction`, the flow **pauses automatically** and its state is persisted.
 
 ---
 
@@ -118,7 +126,11 @@ Used when:
 
 # Control Flow
 
-## Fixed next action
+Every action execution must eventually resolve the next step in the flow. This is done through **Resolvers**. The orchestrator includes built-in resolvers, but you can also implement your own.
+
+## The Built-in Fixed Resolver
+
+The engine provides a default resolver (`FIXED_NEXT_ACTION`) that simply transitions to a pre-defined static action:
 
     {
       "resolver": "FIXED_NEXT_ACTION",
@@ -129,14 +141,14 @@ Used when:
 
 ---
 
-## Custom resolver
+## Custom Resolvers
 
-Resolvers decide the next action dynamically.
+As a developer, you can implement custom resolvers to decide the next action dynamically based on the execution context or external data.
 
-Examples:
-- Probability-based routing
-- Conditional routing
-- External decision
+Examples you can build:
+- Probability-based routing (A/B testing)
+- Conditional routing (e.g. `if context.amount > 100 then APPROVAL_ACTION else AUTO_APPROVE_ACTION`)
+- External decision making
 
 ---
 
@@ -184,14 +196,18 @@ Flow:
 
 # Timeout Handling
 
-Flows can define timeout on paused steps:
+Flows can define a `timeout` explicitly on paused steps (i.e. **`CONSUMER`** actions). 
+
+If a `CONSUMER` action pauses the flow but is not resumed within the specified time, the engine automatically triggers the timeout behavior. The timeout block **must specify a resolver** (built-in or custom) to dictate where the flow goes next.
 
     {
+      "actionName": "WAIT_FOR_PAYMENT",
+      "actionType": "CONSUMER",
       "timeout": {
         "seconds": 30,
         "resolver": "FIXED_NEXT_ACTION",
         "parameters": {
-          "nextAction": "ERROR"
+          "nextAction": "PAYMENT_TIMEOUT_ERROR_ACTION"
         }
       }
     }
@@ -294,6 +310,148 @@ That is already **a serious orchestration engine**, not a toy.
 
 ---
 
+# Architecture & Modules
+
+The project is structured in modular components:
+
+- `orchestrator-core`: The pure engine implementation (FlowExecutor, Resolvers, ExecutionContext)
+- `orchestrator-infra`: Infrastructure bindings (MongoDB persistence, Kafka integrations, scheduling)
+- `orchestrator-demo`: A ready-to-run reference application demonstrating patterns
+- `examples`: JSON definitions showing various flow capabilities
+
+---
+
+# Getting Started
+
+## 1. Add Dependencies
+
+Add the core and infra modules to your Spring Boot project (assuming Maven):
+
+```xml
+<dependency>
+    <groupId>io.github.spring.middleware</groupId>
+    <artifactId>orchestrator-core</artifactId>
+    <version>1.0.0</version>
+</dependency>
+<dependency>
+    <groupId>io.github.spring.middleware</groupId>
+    <artifactId>orchestrator-infra</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+## 2. Implement your Actions
+
+Implement the action interfaces corresponding to the step type:
+
+```java
+@Component
+public class CreateOrderAction implements FunctionAction<OrderRequest, OrderContext> {
+    @Override
+    public OrderContext execute(OrderRequest input, ExecutionContext context) {
+        // Business logic here
+        return new OrderContext(input.getId(), "CREATED");
+    }
+}
+```
+
+## 3. Define the Flow
+
+Create a flow definition mapping out the actions:
+
+```json
+{
+  "flowId": { "value": "ORDER_CREATION_FLOW" },
+  "firstAction": "CREATE_ORDER",
+  "actions": [
+    {
+      "actionName": "CREATE_ORDER",
+      "actionClazz": "com.example.actions.CreateOrderAction",
+      "actionType": "FUNCTION",
+      "nextActionDefinition": {
+        "nextActionSupplierClazz": "com.example.eval.OrderCreatedEvaluator",
+        "nextActionSupplierParams": { "nextActionSupplierParamsType": "VOID" }
+      }
+    }
+  ]
+}
+```
+
+## 4. Trigger Execution
+
+Inject the `FlowExecutor` naturally in your services to start a flow:
+
+```java
+@Service
+public class OrderService {
+    private final FlowExecutor flowExecutor;
+
+    public OrderService(FlowExecutor flowExecutor) {
+        this.flowExecutor = flowExecutor;
+    }
+
+    public void startOrder(OrderRequest request) {
+        flowExecutor.startFlow("ORDER_CREATION_FLOW", request);
+    }
+}
+```
+
+---
+
+# Running the Demo Application
+
+The repository includes a ready-to-run demo application (`orchestrator-demo` module) that showcases the engine's capabilities. 
+To run the demo locally, you'll need the supporting infrastructure.
+
+## 1. Infrastructure Setup
+
+A `docker-compose.yml` file is provided to easily spin up the required databases (like MongoDB) and message brokers. Here is the configuration needed for MongoDB:
+
+```yaml
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
+    profiles: ["infra"]
+    restart: always
+    ports:
+      - "27018:27017" # Exposed for local access
+    environment:
+      MONGO_INITDB_DATABASE: catalog
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - middleware-net
+
+networks:
+  middleware-net:
+    driver: bridge
+
+volumes:
+  mongo-data:
+```
+
+Launch the infrastructure in the background using the `infra` profile:
+
+```bash
+docker-compose --profile infra up -d
+```
+
+## 2. Start the Demo
+
+Once the database and necessary components are running, you can start the orchestrator demo via Maven:
+
+```bash
+# Build the project first
+mvn clean install -DskipTests
+
+# Run the demo application
+cd orchestrator-demo
+mvn spring-boot:run
+```
+
+---
+
 # Next interesting improvements
 
 If you want to evolve this:
@@ -316,21 +474,3 @@ If you want to evolve this:
 - Metrics
 - Tracing
 - Flow visualization
-
----
-
-# When to use it
-
-Use this when:
-
-- You have async workflows
-- You use Kafka/events heavily
-- You need pause/resume
-- You want explicit orchestration
-
-Avoid if:
-- You just need simple service chaining
-- You want BPMN / visual modeling
-
----
-
